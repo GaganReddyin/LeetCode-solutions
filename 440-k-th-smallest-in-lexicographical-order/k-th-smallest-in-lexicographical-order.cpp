@@ -1,27 +1,28 @@
 class Solution {
 public:
-    int Count(long curr, long next, int n) {
-        long countnum = 0;
+
+    int solve(int n, long curr, long second) {
+        int cnt = 0;
         while (curr <= n) {
-            countnum += (next - curr);
+            cnt += min((long long)(n + 1), (long long)second) - curr;
             curr *= 10;
-            next *= 10;
-            next = min(next, (long)n + 1);
+            second *= 10;
         }
-        return countnum;
+        return cnt;
     }
 
     int findKthNumber(int n, int k) {
         int curr = 1;
-        k -= 1;
+        k--;
+
         while (k > 0) {
-            int count = Count(curr, curr + 1, n);
-            if (count <= k) {
+            int cnt = solve(n, curr, curr + 1);
+            if (cnt <= k) {
                 curr++;
-                k -= count;
+                k -= cnt;
             } else {
                 curr *= 10;
-                k -= 1;
+                k--;
             }
         }
         return curr;
