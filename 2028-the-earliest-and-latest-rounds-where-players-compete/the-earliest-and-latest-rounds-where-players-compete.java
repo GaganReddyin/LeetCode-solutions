@@ -1,54 +1,79 @@
 class Solution {
+
+    private HashMap<String, int[]> memo = new HashMap<>();
+    
     public int[] earliestAndLatest(int n, int firstPlayer, int secondPlayer) {
-        int p1 = Math.min(firstPlayer, secondPlayer);
-        int p2 = Math.max(firstPlayer, secondPlayer);
-        if (p1 + p2 == n + 1) {
-            // p1 and p2 compete in the first round
+        return solve(n , firstPlayer - 1, secondPlayer - 1);
+    }
+
+    private int[] solve (int n, int firstPlayer, int secondPlayer) {
+        if (firstPlayer + secondPlayer == n - 1) {
             return new int[]{1, 1};
         }
-        if (n == 3 || n == 4) {
-            // p1 and p2 must compete in the second round (only two rounds).
-            return new int[]{2, 2};
+
+        String key = n + "," + firstPlayer + "," + secondPlayer;
+        if (memo.containsKey(key)) {
+            return memo.get(key);
         }
 
-        // Flip to make p1 be more closer to left than p2 to right end for convenience
-        if (p1 - 1 > n - p2) {
-            int t = n + 1 - p1;
-            p1 = n + 1 - p2;
-            p2 = t;
+        int earliest = Integer.MAX_VALUE;
+        int latest = Integer.MIN_VALUE;
+
+        List<List<Integer>> allOutcomes = generateAllOutcomes(n , firstPlayer, secondPlayer);
+        
+        for (List<Integer> winners : allOutcomes) {
+            int nN = winners.size();
+            int nFirst = winners.indexOf(firstPlayer);
+            int nSecond = winners.indexOf(secondPlayer);
+            int[] result = solve(nN, nFirst, nSecond);
+            earliest = Math.min(earliest, result[0] + 1);
+            latest = Math.max(latest, result[1] + 1);
+        }
+        
+        int[] result = new int[]{earliest, latest};
+        memo.put(key, result);
+        return result;
+    }
+
+    private List<List<Integer>> generateAllOutcomes(int n, int firstPlayer, int secondPlayer) {
+        List<List<Integer>> outcomes = new ArrayList<>();
+        List<Integer> winners = new ArrayList<>();
+
+        if (n % 2 == 1) {
+            winners.add(n / 2);
         }
 
-        int m = (n + 1) / 2;
-        int min = n;
-        int max = 1;
-        if (p2 * 2 <= n + 1) {
-            // p2 is in the first half (n odd or even) or exact middle (n odd)
-            int a = p1 - 1;
-            int b = p2 - p1 - 1;
-            // i represents the number of front players in A wins
-            // j represents the number of front players in B wins
-            for (int i = 0; i <= a; i++) {
-                for (int j = 0; j <= b; j++) {
-                    int[] ret = earliestAndLatest(m, i + 1, i + j + 2);
-                    min = Math.min(min, 1 + ret[0]);
-                    max = Math.max(max, 1 + ret[1]);
-                }
-            }
+        backtrack(n , firstPlayer, secondPlayer, 0, winners, outcomes);
+        return outcomes;
+    }
+
+    private void backtrack(int n, int firstPlayer, int secondPlayer, int pairIndex, List<Integer> winners, List<List<Integer>> outcomes) {
+        int pairs = n / 2;
+        if (pairIndex == pairs) {
+            List<Integer> sorted = new ArrayList<>(winners);
+            Collections.sort(sorted);
+            outcomes.add(sorted);
+            return;
+        }
+        int left = pairIndex;
+        int right = n - 1 - pairIndex;
+        
+        if (left == firstPlayer || right == firstPlayer) {
+            winners.add(firstPlayer);
+            backtrack(n, firstPlayer, secondPlayer, pairIndex + 1, winners, outcomes);
+            winners.remove(winners.size() - 1);
+        } else if (left == secondPlayer || right == secondPlayer) {
+            winners.add(secondPlayer);
+            backtrack(n, firstPlayer, secondPlayer, pairIndex + 1, winners, outcomes);
+            winners.remove(winners.size() - 1);
         } else {
-            // p2 is in the later half (and has >= p1 distance to the end)
-            int p4 = n + 1 - p2;
-            int a = p1 - 1;
-            int b = p4 - p1 - 1;
-            // Group C are players between p4 and p2, (c+1)/2 will advance to the next round.
-            int c = p2 - p4 - 1;
-            for (int i = 0; i <= a; i++) {
-                for (int j = 0; j <= b; j++) {
-                    int[] ret = earliestAndLatest(m, i + 1, i + j + 1 + (c + 1) / 2 + 1);
-                    min = Math.min(min, 1 + ret[0]);
-                    max = Math.max(max, 1 + ret[1]);
-                }
-            }
+            winners.add(left);
+            backtrack(n, firstPlayer, secondPlayer, pairIndex + 1, winners, outcomes);
+            winners.remove(winners.size() - 1);
+            winners.add(right);
+            backtrack(n, firstPlayer, secondPlayer, pairIndex + 1, winners, outcomes);
+            winners. remove(winners.size() - 1);
         }
-        return new int[]{min, max};
+      
     }
 }
